@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <time.h>
+
 #include "raylib.h"
 
 #define WINDOW_WIDTH 800
@@ -38,7 +41,7 @@ Sim sim = {
         .dy = 1
     }},
     .ball_count = 1,
-    .velocity = 1,
+    .velocity = 5,
     .stored_dx = 1,
     .stored_dy = 1
 };
@@ -100,8 +103,8 @@ void UpdateBallPositions() {
         Ball new_ball = {
             .x = vec.x,
             .y = vec.y,
-            .dx = 0.5,
-            .dy = 1
+            .dx = (rand() % 2 == 0) ? 1 : -1,
+            .dy = (rand() % 2 == 0) ? 1 : -1
         };
         sim.balls[sim.ball_count++] = new_ball;
     }
@@ -132,6 +135,8 @@ void DrawRedBalls() {
 }
 
 int main(void) {
+    srand(time(NULL));
+
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "bounc");
     SetTargetFPS(60);
 
