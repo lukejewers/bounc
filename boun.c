@@ -54,7 +54,8 @@ float float_rand(float min, float max)
     return r;
 }
 
-void UpdateSimState() {
+void UpdateSimState()
+{
     if (IsKeyPressed(KEY_SPACE)) {
         if (sim.state == PLAY) {
             sim.state = PAUSE;
@@ -79,7 +80,8 @@ void UpdateSimState() {
     }
 }
 
-bool CheckBallCollision(Ball a, Ball b) {
+bool CheckBallCollision(Ball a, Ball b)
+{
     int dx = a.x - b.x;
     int dy = a.y - b.y;
     int distance_squared = dx*dx + dy*dy;
@@ -87,7 +89,8 @@ bool CheckBallCollision(Ball a, Ball b) {
     return distance_squared < (BALL_RADIUS * 2) * (BALL_RADIUS * 2);
 }
 
-void ResolveBallCollision(Ball *a, Ball *b) {
+void ResolveBallCollision(Ball *a, Ball *b)
+{
     // swap velocities
     int temp_adx = a->dx;
     int temp_ady = a->dy;
@@ -103,7 +106,8 @@ void ResolveBallCollision(Ball *a, Ball *b) {
     b->y += b->dy * sim.velocity;
 }
 
-void UpdateBallPositions() {
+void UpdateBallPositions()
+{
     if (sim.state == PAUSE) return;
     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && sim.ball_count < MAX_BALLS) {
         Vector2 vec = GetMousePosition();
@@ -135,13 +139,15 @@ void UpdateBallPositions() {
     }
 }
 
-void DrawRedBalls() {
+void DrawRedBalls()
+{
     for (int i = 0; i < sim.ball_count; ++i) {
         DrawCircle(sim.balls[i].x, sim.balls[i].y, BALL_RADIUS, (Color){255, 0, 0, 255});
     }
 }
 
-int main(void) {
+int main(void)
+{
     srand(time(NULL));
 
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "bounc");
