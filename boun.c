@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 
 #include "raylib.h"
@@ -28,9 +29,8 @@ typedef struct Sim {
     State state;
     int velocity;
     Ball balls[MAX_BALLS];
+    Ball paused_balls[MAX_BALLS];
     int ball_count;
-    int stored_dx;
-    int stored_dy;
 } Sim;
 
 Sim sim = {
@@ -43,8 +43,6 @@ Sim sim = {
     }},
     .ball_count = 1,
     .velocity = 5,
-    .stored_dx = 1,
-    .stored_dy = 1
 };
 
 float float_rand(float min, float max)
@@ -60,8 +58,7 @@ void UpdateSimState() {
     if (IsKeyPressed(KEY_SPACE)) {
         if (sim.state == PLAY) {
             sim.state = PAUSE;
-            sim.stored_dx = sim.balls[0].dx;
-            sim.stored_dy = sim.balls[0].dy;
+            memcpy(sim.paused_balls, sim.balls, sim.ball_count * sizeof(sim.balls[0]));
             for (int i = 0; i < sim.ball_count; ++i) {
                 sim.balls[i].dx = 0;
                 sim.balls[i].dy = 0;
@@ -69,8 +66,8 @@ void UpdateSimState() {
         } else {
             sim.state = PLAY;
             for (int i = 0; i < sim.ball_count; ++i) {
-                sim.balls[i].dx = sim.stored_dx;
-                sim.balls[i].dy = sim.stored_dy;
+                sim.balls[i].dx = sim.paused_balls[i].dx;
+                sim.balls[i].dy = sim.paused_balls[i].dy;
             }
         }
     }
