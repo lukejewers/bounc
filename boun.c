@@ -38,11 +38,11 @@ Sim sim = {
     .balls = {{
         .x = WINDOW_WIDTH/2,
         .y = WINDOW_HEIGHT/2,
-        .dx = 1,
-        .dy = 1
+        .dx = 1.0f,
+        .dy = 1.0f
     }},
     .ball_count = 1,
-    .velocity = 5,
+    .velocity = 8,
 };
 
 float float_rand(float min, float max)
@@ -50,7 +50,7 @@ float float_rand(float min, float max)
     float scale = rand() / (float)RAND_MAX;
     float r = min + scale * (max - min);
     // avoid values too close to 0
-    if (fabsf(r) < 0.2f) r = (r >= 0) ? 0.2f : -0.2f;
+    if (fabsf(r) < 0.3f) r = (r >= 0) ? 0.3f : -0.3f;
     return r;
 }
 
@@ -106,6 +106,15 @@ void ResolveBallCollision(Ball *a, Ball *b)
     b->y += b->dy * sim.velocity;
 }
 
+void normalise_ball_speed(Ball *new_ball)
+{
+    float length = sqrtf(new_ball->dx * new_ball->dx + new_ball->dy * new_ball->dy);
+    if (length > 0) {
+        new_ball->dx /= length;
+        new_ball->dy /= length;
+    }
+}
+
 void UpdateBallPositions()
 {
     if (sim.state == PAUSE) return;
@@ -114,9 +123,10 @@ void UpdateBallPositions()
         Ball new_ball = {
             .x = vec.x,
             .y = vec.y,
-            .dx = float_rand(0, 1),
-            .dy = float_rand(0, 1)
+            .dx = float_rand(-1, 1),
+            .dy = float_rand(-1, 1)
         };
+        normalise_ball_speed(&new_ball);
         sim.balls[sim.ball_count++] = new_ball;
     }
 
