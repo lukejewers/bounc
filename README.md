@@ -25,6 +25,5 @@ make run
 
 ## TODO
 
-- Add ball-to-ball collisions
 - Configurable ball speed
 - Ball spawn animation

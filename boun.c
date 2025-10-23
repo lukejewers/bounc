@@ -2,8 +2,8 @@
 
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
-#define MAX_BALLS 15
-#define BALL_RADIUS 25
+#define MAX_BALLS 20
+#define BALL_RADIUS 20
 #define FONT_SIZE 20
 
 #define DARK_BG CLITERAL(Color){ 0x18, 0x18, 0x18, 255 }
@@ -38,7 +38,7 @@ Sim sim = {
         .dy = 1
     }},
     .ball_count = 1,
-    .velocity = 10,
+    .velocity = 1,
     .stored_dx = 1,
     .stored_dy = 1
 };
@@ -69,16 +69,49 @@ void UpdateSimState() {
     }
 }
 
+bool CheckBallCollision(Ball a, Ball b) {
+    int dx = a.x - b.x;
+    int dy = a.y - b.y;
+    int distance_squared = dx*dx + dy*dy;
+    // distance between centers < 2 × BALL_RADIUS
+    return distance_squared < (BALL_RADIUS * 2) * (BALL_RADIUS * 2);
+}
+
+void ResolveBallCollision(Ball *a, Ball *b) {
+    // swap velocities
+    int temp_adx = a->dx;
+    int temp_ady = a->dy;
+    a->dx = b->dx;
+    a->dy = b->dy;
+    b->dx = temp_adx;
+    b->dy = temp_ady;
+
+    // move balls apart to prevent sticking
+    a->x += a->dx * sim.velocity;
+    a->y += a->dy * sim.velocity;
+    b->x += b->dx * sim.velocity;
+    b->y += b->dy * sim.velocity;
+}
+
 void UpdateBallPositions() {
+    if (sim.state == PAUSE) return;
     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && sim.ball_count < MAX_BALLS) {
         Vector2 vec = GetMousePosition();
         Ball new_ball = {
             .x = vec.x,
             .y = vec.y,
-            .dx = 1,
+            .dx = 0.5,
             .dy = 1
         };
         sim.balls[sim.ball_count++] = new_ball;
+    }
+
+    for (int i = 0; i < sim.ball_count; ++i) {
+        for (int j = i + 1; j < sim.ball_count; ++j) {
+            if (CheckBallCollision(sim.balls[i], sim.balls[j])) {
+                ResolveBallCollision(&sim.balls[i], &sim.balls[j]);
+            }
+        }
     }
 
     for (int i = 0; i < sim.ball_count; ++i) {
