@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdlib.h>
 #include <time.h>
 
@@ -19,8 +20,8 @@ typedef enum {
 typedef struct Ball {
     int x;
     int y;
-    int dx;
-    int dy;
+    float dx;
+    float dy;
 } Ball;
 
 typedef struct Sim {
@@ -45,6 +46,15 @@ Sim sim = {
     .stored_dx = 1,
     .stored_dy = 1
 };
+
+float float_rand(float min, float max)
+{
+    float scale = rand() / (float)RAND_MAX;
+    float r = min + scale * (max - min);
+    // avoid values too close to 0
+    if (fabsf(r) < 0.2f) r = (r >= 0) ? 0.2f : -0.2f;
+    return r;
+}
 
 void UpdateSimState() {
     if (IsKeyPressed(KEY_SPACE)) {
@@ -103,8 +113,8 @@ void UpdateBallPositions() {
         Ball new_ball = {
             .x = vec.x,
             .y = vec.y,
-            .dx = (rand() % 2 == 0) ? 1 : -1,
-            .dy = (rand() % 2 == 0) ? 1 : -1
+            .dx = float_rand(0, 1),
+            .dy = float_rand(0, 1)
         };
         sim.balls[sim.ball_count++] = new_ball;
     }
