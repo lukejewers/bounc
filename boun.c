@@ -8,7 +8,7 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 600
 #define MAX_BALLS 20
-#define BALL_RADIUS 20
+#define BALL_RADIUS 15
 #define FONT_SIZE 20
 
 #define DARK_BG CLITERAL(Color){ 0x18, 0x18, 0x18, 255 }
