@@ -20,8 +20,8 @@ typedef enum {
 } State;
 
 typedef struct Ball {
-    int x;
-    int y;
+    float x;
+    float y;
     float dx;
     float dy;
 } Ball;
@@ -29,9 +29,10 @@ typedef struct Ball {
 typedef struct Sim {
     State state;
     int speed;
+    unsigned int collisions;
     Ball balls[MAX_BALLS];
     Ball paused_balls[MAX_BALLS];
-    int ball_count;
+    unsigned int ball_count;
 } Sim;
 
 Sim sim = {
@@ -44,6 +45,7 @@ Sim sim = {
     }},
     .ball_count = 1,
     .speed = 8,
+    .collisions = 0,
 };
 
 float float_rand(float min, float max)
@@ -67,13 +69,13 @@ void UpdateSimState()
         if (sim.state == PLAY) {
             sim.state = PAUSE;
             memcpy(sim.paused_balls, sim.balls, sim.ball_count * sizeof(sim.balls[0]));
-            for (int i = 0; i < sim.ball_count; ++i) {
+            for (unsigned int i = 0; i < sim.ball_count; ++i) {
                 sim.balls[i].dx = 0;
                 sim.balls[i].dy = 0;
             }
         } else {
             sim.state = PLAY;
-            for (int i = 0; i < sim.ball_count; ++i) {
+            for (unsigned int i = 0; i < sim.ball_count; ++i) {
                 sim.balls[i].dx = sim.paused_balls[i].dx;
                 sim.balls[i].dy = sim.paused_balls[i].dy;
             }
@@ -89,9 +91,9 @@ void UpdateSimState()
 
 bool CheckBallCollision(Ball a, Ball b)
 {
-    int dx = a.x - b.x;
-    int dy = a.y - b.y;
-    int distance_squared = dx*dx + dy*dy;
+    float dx = a.x - b.x;
+    float dy = a.y - b.y;
+    float distance_squared = dx*dx + dy*dy;
     // distance between centers < 2 × BALL_RADIUS
     return distance_squared < (BALL_RADIUS * 2) * (BALL_RADIUS * 2);
 }
@@ -99,18 +101,19 @@ bool CheckBallCollision(Ball a, Ball b)
 void ResolveBallCollision(Ball *a, Ball *b)
 {
     // swap velocities
-    int temp_adx = a->dx;
-    int temp_ady = a->dy;
+    float temp_adx = a->dx;
+    float temp_ady = a->dy;
     a->dx = b->dx;
     a->dy = b->dy;
     b->dx = temp_adx;
     b->dy = temp_ady;
-
     // move balls apart to prevent sticking
     a->x += a->dx * sim.speed;
     a->y += a->dy * sim.speed;
     b->x += b->dx * sim.speed;
     b->y += b->dy * sim.speed;
+    // add collision
+    sim.collisions++;
 }
 
 void normalise_ball_speed(Ball *new_ball)
@@ -119,13 +122,16 @@ void normalise_ball_speed(Ball *new_ball)
     if (length > 0) {
         new_ball->dx /= length;
         new_ball->dy /= length;
+    } else {
+        new_ball->dx = 1.0f;
+        new_ball->dy = 1.0f;
     }
 }
 
 void UpdateBallPositions()
 {
     if (sim.state == PAUSE) return;
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && sim.ball_count < MAX_BALLS) {
+    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && sim.ball_count < MAX_BALLS - 1) {
         Vector2 vec = GetMousePosition();
         Ball new_ball = {
             .x = vec.x,
@@ -137,15 +143,15 @@ void UpdateBallPositions()
         sim.balls[sim.ball_count++] = new_ball;
     }
 
-    for (int i = 0; i < sim.ball_count; ++i) {
-        for (int j = i + 1; j < sim.ball_count; ++j) {
+    for (unsigned int i = 0; i < sim.ball_count; ++i) {
+        for (unsigned int j = i + 1; j < sim.ball_count; ++j) {
             if (CheckBallCollision(sim.balls[i], sim.balls[j])) {
                 ResolveBallCollision(&sim.balls[i], &sim.balls[j]);
             }
         }
     }
 
-    for (int i = 0; i < sim.ball_count; ++i) {
+    for (unsigned int i = 0; i < sim.ball_count; ++i) {
         sim.balls[i].x += sim.speed * sim.balls[i].dx;
         sim.balls[i].y += sim.speed * sim.balls[i].dy;
 
@@ -158,7 +164,7 @@ void UpdateBallPositions()
 
 void DrawRedBalls()
 {
-    for (int i = 0; i < sim.ball_count; ++i) {
+    for (unsigned int i = 0; i < sim.ball_count; ++i) {
         DrawCircle(sim.balls[i].x, sim.balls[i].y, BALL_RADIUS, (Color){255, 0, 0, 255});
     }
 }
@@ -173,11 +179,14 @@ void DrawHUD()
     snprintf(buffer, BUFFER_SIZE, "FPS: %d", GetFPS());
     DrawText(buffer, MARGIN, MARGIN, FONT_SIZE, WHITE);
 
-    snprintf(buffer, BUFFER_SIZE, "ball count: %d", sim.ball_count);
+    snprintf(buffer, BUFFER_SIZE, "speed: %d", sim.speed);
     DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT, FONT_SIZE, WHITE);
 
-    snprintf(buffer, BUFFER_SIZE, "speed: %d", sim.speed);
+    snprintf(buffer, BUFFER_SIZE, "ball count: %u", sim.ball_count);
     DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 2, FONT_SIZE, WHITE);
+
+    snprintf(buffer, BUFFER_SIZE, "collisions: %u", sim.collisions);
+    DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 3, FONT_SIZE, WHITE);
 }
 
 int main(void)
