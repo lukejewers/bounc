@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -80,9 +81,9 @@ void UpdateSimState()
     }
 
     if (sim.state == PAUSE) {
-        const char* pauseText = "PAUSED";
-        int text_width = MeasureText(pauseText, FONT_SIZE);
-        DrawText(pauseText, WINDOW_WIDTH/2 - text_width/2, WINDOW_HEIGHT/2 - FONT_SIZE, FONT_SIZE, WHITE);
+        const char* pause_text = "PAUSED";
+        int text_width = MeasureText(pause_text, FONT_SIZE);
+        DrawText(pause_text, WINDOW_WIDTH/2 - text_width/2, WINDOW_HEIGHT/2 - FONT_SIZE, FONT_SIZE, WHITE);
     }
 }
 
@@ -162,6 +163,23 @@ void DrawRedBalls()
     }
 }
 
+void DrawHUD()
+{
+    const int BUFFER_SIZE = 100;
+    char buffer[BUFFER_SIZE];
+    const int MARGIN = WINDOW_WIDTH / 30;
+    const int LINE_HEIGHT = FONT_SIZE * 1.5;
+
+    snprintf(buffer, BUFFER_SIZE, "FPS: %d", GetFPS());
+    DrawText(buffer, MARGIN, MARGIN, FONT_SIZE, WHITE);
+
+    snprintf(buffer, BUFFER_SIZE, "ball count: %d", sim.ball_count);
+    DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT, FONT_SIZE, WHITE);
+
+    snprintf(buffer, BUFFER_SIZE, "speed: %d", sim.speed);
+    DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 2, FONT_SIZE, WHITE);
+}
+
 int main(void)
 {
     srand(time(NULL));
@@ -178,6 +196,7 @@ int main(void)
         // Draw
         ClearBackground(DARK_BG);
         DrawRedBalls();
+        DrawHUD();
 
         EndDrawing();
     }
