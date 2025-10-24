@@ -98,21 +98,22 @@ bool CheckBallCollision(Ball a, Ball b)
     return distance_squared < (BALL_RADIUS * 2) * (BALL_RADIUS * 2);
 }
 
-void ResolveBallCollision(Ball *a, Ball *b)
-{
-    // swap velocities
-    float temp_adx = a->dx;
-    float temp_ady = a->dy;
-    a->dx = b->dx;
-    a->dy = b->dy;
-    b->dx = temp_adx;
-    b->dy = temp_ady;
-    // move balls apart to prevent sticking
-    a->x += a->dx * sim.speed;
-    a->y += a->dy * sim.speed;
-    b->x += b->dx * sim.speed;
-    b->y += b->dy * sim.speed;
-    // add collision
+void ResolveBallCollision(Ball *a, Ball *b) {
+    // swap velocity components along collision normal
+    float dx = b->x - a->x;
+    float dy = b->y - a->y;
+    float distance = sqrtf(dx*dx + dy*dy);
+    float nx = dx / distance;
+    float ny = dy / distance;
+    // project velocities onto collision normal
+    float a_speed = a->dx * nx + a->dy * ny;
+    float b_speed = b->dx * nx + b->dy * ny;
+    // swap the normal components
+    a->dx += (b_speed - a_speed) * nx;
+    a->dy += (b_speed - a_speed) * ny;
+    b->dx += (a_speed - b_speed) * nx;
+    b->dy += (a_speed - b_speed) * ny;
+    // incr collisions
     sim.collisions++;
 }
 
@@ -155,8 +156,8 @@ void UpdateBallPositions()
         sim.balls[i].x += sim.speed * sim.balls[i].dx;
         sim.balls[i].y += sim.speed * sim.balls[i].dy;
 
-        if (sim.balls[i].y >= WINDOW_HEIGHT - BALL_RADIUS) sim.balls[i].dy = -1;
-        if (sim.balls[i].x >= WINDOW_WIDTH - BALL_RADIUS) sim.balls[i].dx = -1;
+        if (sim.balls[i].y >= WINDOW_HEIGHT - BALL_RADIUS) sim.balls[i].dy *= -1;
+        if (sim.balls[i].x >= WINDOW_WIDTH - BALL_RADIUS) sim.balls[i].dx *= -1;
         if (sim.balls[i].y <= 0 + BALL_RADIUS) sim.balls[i].dy = 1;
         if (sim.balls[i].x <= 0 + BALL_RADIUS) sim.balls[i].dx = 1;
     }
