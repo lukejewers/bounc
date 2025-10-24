@@ -162,10 +162,12 @@ void UpdateBallPositions()
     }
 }
 
-void DrawRedBalls()
+void DrawBalls()
 {
+    Color ball_colors[] = {RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, VIOLET};
     for (unsigned int i = 0; i < sim.ball_count; ++i) {
-        DrawCircle(sim.balls[i].x, sim.balls[i].y, BALL_RADIUS, (Color){255, 0, 0, 255});
+        Color color = ball_colors[i % 7];
+        DrawCircle(sim.balls[i].x, sim.balls[i].y, BALL_RADIUS, color);
     }
 }
 
@@ -204,7 +206,7 @@ int main(void)
         UpdateBallPositions();
         // Draw
         ClearBackground(DARK_BG);
-        DrawRedBalls();
+        DrawBalls();
         DrawHUD();
 
         EndDrawing();
