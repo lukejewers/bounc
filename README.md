@@ -6,6 +6,7 @@ A simple ball physics simulation built with Raylib in C. Features interactive re
 
 - **Left Click**: Add a new ball at cursor position
 - **SPACE**: Pause/Resume simulation
+- **UP/DOWN Arrows**: Increase/Decrease ball speed
 - **ESC** or **Close Window**: Exit application
 
 ## Prerequisites
@@ -22,8 +23,3 @@ make run
 ## Demo
 
 ![bounc](./bounc.gif)
-
-## TODO
-
-- Configurable ball speed
-- Ball spawn animation

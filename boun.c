@@ -27,7 +27,7 @@ typedef struct Ball {
 
 typedef struct Sim {
     State state;
-    int velocity;
+    int speed;
     Ball balls[MAX_BALLS];
     Ball paused_balls[MAX_BALLS];
     int ball_count;
@@ -42,7 +42,7 @@ Sim sim = {
         .dy = 1.0f
     }},
     .ball_count = 1,
-    .velocity = 8,
+    .speed = 8,
 };
 
 float float_rand(float min, float max)
@@ -56,6 +56,12 @@ float float_rand(float min, float max)
 
 void UpdateSimState()
 {
+    if (IsKeyPressed(KEY_UP)) {
+        sim.speed++;
+    } else if (IsKeyPressed(KEY_DOWN)) {
+        if (sim.speed > 0) sim.speed--;
+    }
+
     if (IsKeyPressed(KEY_SPACE)) {
         if (sim.state == PLAY) {
             sim.state = PAUSE;
@@ -100,10 +106,10 @@ void ResolveBallCollision(Ball *a, Ball *b)
     b->dy = temp_ady;
 
     // move balls apart to prevent sticking
-    a->x += a->dx * sim.velocity;
-    a->y += a->dy * sim.velocity;
-    b->x += b->dx * sim.velocity;
-    b->y += b->dy * sim.velocity;
+    a->x += a->dx * sim.speed;
+    a->y += a->dy * sim.speed;
+    b->x += b->dx * sim.speed;
+    b->y += b->dy * sim.speed;
 }
 
 void normalise_ball_speed(Ball *new_ball)
@@ -139,8 +145,8 @@ void UpdateBallPositions()
     }
 
     for (int i = 0; i < sim.ball_count; ++i) {
-        sim.balls[i].x += sim.velocity * sim.balls[i].dx;
-        sim.balls[i].y += sim.velocity * sim.balls[i].dy;
+        sim.balls[i].x += sim.speed * sim.balls[i].dx;
+        sim.balls[i].y += sim.speed * sim.balls[i].dy;
 
         if (sim.balls[i].y >= WINDOW_HEIGHT - BALL_RADIUS) sim.balls[i].dy = -1;
         if (sim.balls[i].x >= WINDOW_WIDTH - BALL_RADIUS) sim.balls[i].dx = -1;
