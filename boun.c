@@ -19,20 +19,28 @@ typedef enum {
     PAUSE = 1,
 } State;
 
+typedef enum {
+    MODE_COLLISION = 0,
+    MODE_ABSORPTION = 1,
+} Mode;
+
 typedef struct Ball {
     float x;
     float y;
     float dx;
     float dy;
+    float radius;
 } Ball;
 
 typedef struct Sim {
     State state;
     int speed;
     unsigned int collisions;
+    unsigned int absorptions;
     Ball balls[MAX_BALLS];
     Ball paused_balls[MAX_BALLS];
     unsigned int ball_count;
+    Mode mode;
 } Sim;
 
 Sim sim = {
@@ -41,11 +49,14 @@ Sim sim = {
         .x = WINDOW_WIDTH/2,
         .y = WINDOW_HEIGHT/2,
         .dx = 1.0f,
-        .dy = 1.0f
+        .dy = 1.0f,
+        .radius = BALL_RADIUS
     }},
     .ball_count = 1,
     .speed = 8,
     .collisions = 0,
+    .mode = MODE_COLLISION,
+    .absorptions = 0,
 };
 
 float float_rand(float min, float max)
@@ -61,10 +72,10 @@ void UpdateSimState()
 {
     if (IsKeyPressed(KEY_UP)) {
         sim.speed++;
-    } else if (IsKeyPressed(KEY_DOWN)) {
+    }
+    if (IsKeyPressed(KEY_DOWN)) {
         if (sim.speed > 0) sim.speed--;
     }
-
     if (IsKeyPressed(KEY_SPACE)) {
         if (sim.state == PLAY) {
             sim.state = PAUSE;
@@ -81,6 +92,9 @@ void UpdateSimState()
             }
         }
     }
+    if (IsKeyPressed(KEY_M)) {
+        sim.mode = (sim.mode == MODE_COLLISION) ? MODE_ABSORPTION : MODE_COLLISION;
+    }
 
     if (sim.state == PAUSE) {
         const char* pause_text = "PAUSED";
@@ -94,11 +108,13 @@ bool CheckBallCollision(Ball a, Ball b)
     float dx = a.x - b.x;
     float dy = a.y - b.y;
     float distance_squared = dx*dx + dy*dy;
+    float min_distance = a.radius + b.radius;
     // distance between centers < 2 × BALL_RADIUS
-    return distance_squared < (BALL_RADIUS * 2) * (BALL_RADIUS * 2);
+    return distance_squared < min_distance * min_distance;
 }
 
-void ResolveBallCollision(Ball *a, Ball *b) {
+void ResolveBallCollision(Ball *a, Ball *b)
+{
     // swap velocity components along collision normal
     float dx = b->x - a->x;
     float dy = b->y - a->y;
@@ -115,6 +131,16 @@ void ResolveBallCollision(Ball *a, Ball *b) {
     b->dy += (a_speed - b_speed) * ny;
     // incr collisions
     sim.collisions++;
+}
+
+void ResolveBallAbsorption(Ball *a, Ball *b)
+{
+    if (sim.ball_count > 1) {
+        a->radius += b->radius * 0.2f;
+        *b = sim.balls[sim.ball_count - 1];
+        sim.ball_count--;
+        sim.absorptions++;
+    }
 }
 
 void normalise_ball_speed(Ball *new_ball)
@@ -138,7 +164,8 @@ void UpdateBallPositions()
             .x = vec.x,
             .y = vec.y,
             .dx = float_rand(-1, 1),
-            .dy = float_rand(-1, 1)
+            .dy = float_rand(-1, 1),
+            .radius = BALL_RADIUS
         };
         normalise_ball_speed(&new_ball);
         sim.balls[sim.ball_count++] = new_ball;
@@ -147,7 +174,8 @@ void UpdateBallPositions()
     for (unsigned int i = 0; i < sim.ball_count; ++i) {
         for (unsigned int j = i + 1; j < sim.ball_count; ++j) {
             if (CheckBallCollision(sim.balls[i], sim.balls[j])) {
-                ResolveBallCollision(&sim.balls[i], &sim.balls[j]);
+                if (sim.mode == MODE_COLLISION) ResolveBallCollision(&sim.balls[i], &sim.balls[j]);
+                else if (sim.mode == MODE_ABSORPTION) ResolveBallAbsorption(&sim.balls[i], &sim.balls[j]);
             }
         }
     }
@@ -156,10 +184,10 @@ void UpdateBallPositions()
         sim.balls[i].x += sim.speed * sim.balls[i].dx;
         sim.balls[i].y += sim.speed * sim.balls[i].dy;
 
-        if (sim.balls[i].y >= WINDOW_HEIGHT - BALL_RADIUS) sim.balls[i].dy *= -1;
-        if (sim.balls[i].x >= WINDOW_WIDTH - BALL_RADIUS) sim.balls[i].dx *= -1;
-        if (sim.balls[i].y <= 0 + BALL_RADIUS) sim.balls[i].dy = 1;
-        if (sim.balls[i].x <= 0 + BALL_RADIUS) sim.balls[i].dx = 1;
+        if (sim.balls[i].y >= WINDOW_HEIGHT - sim.balls[i].radius) sim.balls[i].dy *= -1;
+        if (sim.balls[i].x >= WINDOW_WIDTH - sim.balls[i].radius) sim.balls[i].dx *= -1;
+        if (sim.balls[i].y <= 0 + sim.balls[i].radius) sim.balls[i].dy *= -1;
+        if (sim.balls[i].x <= 0 + sim.balls[i].radius) sim.balls[i].dx *= -1;
     }
 }
 
@@ -168,7 +196,7 @@ void DrawBalls()
     Color ball_colors[] = {RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, VIOLET};
     for (unsigned int i = 0; i < sim.ball_count; ++i) {
         Color color = ball_colors[i % 7];
-        DrawCircle(sim.balls[i].x, sim.balls[i].y, BALL_RADIUS, color);
+        DrawCircle(sim.balls[i].x, sim.balls[i].y, sim.balls[i].radius, color);
     }
 }
 
@@ -188,8 +216,18 @@ void DrawHUD()
     snprintf(buffer, BUFFER_SIZE, "ball count: %u", sim.ball_count);
     DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 2, FONT_SIZE, WHITE);
 
-    snprintf(buffer, BUFFER_SIZE, "collisions: %u", sim.collisions);
+   // Add mode indicator
+    const char* mode_text = (sim.mode == MODE_COLLISION) ? "COLLISION" : "ABSORPTION";
+    snprintf(buffer, BUFFER_SIZE, "mode: %s", mode_text);
     DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 3, FONT_SIZE, WHITE);
+
+    if (sim.mode == MODE_COLLISION) {
+        snprintf(buffer, BUFFER_SIZE, "collisions: %u", sim.collisions);
+        DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 4, FONT_SIZE, WHITE);
+    } else if (sim.mode == MODE_ABSORPTION) {
+        snprintf(buffer, BUFFER_SIZE, "absorptions: %u", sim.absorptions);
+        DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 4, FONT_SIZE, WHITE);
+    }
 }
 
 int main(void)
