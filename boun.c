@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +31,7 @@ typedef struct Ball {
     float dx;
     float dy;
     float radius;
+    Color colour;
 } Ball;
 
 typedef struct Sim {
@@ -40,6 +42,7 @@ typedef struct Sim {
     Ball balls[MAX_BALLS];
     Ball paused_balls[MAX_BALLS];
     unsigned int ball_count;
+    bool display_hud;
     Mode mode;
 } Sim;
 
@@ -50,13 +53,15 @@ Sim sim = {
         .y = WINDOW_HEIGHT/2,
         .dx = 1.0f,
         .dy = 1.0f,
-        .radius = BALL_RADIUS
+        .radius = BALL_RADIUS,
+        .colour = RED
     }},
     .ball_count = 1,
-    .speed = 8,
+    .speed = 5,
     .collisions = 0,
     .mode = MODE_COLLISION,
     .absorptions = 0,
+    .display_hud = true,
 };
 
 float float_rand(float min, float max)
@@ -95,7 +100,9 @@ void UpdateSimState()
     if (IsKeyPressed(KEY_M)) {
         sim.mode = (sim.mode == MODE_COLLISION) ? MODE_ABSORPTION : MODE_COLLISION;
     }
-
+    if (IsKeyPressed(KEY_D)) {
+        sim.display_hud = !sim.display_hud;
+    }
     if (sim.state == PAUSE) {
         const char* pause_text = "PAUSED";
         int text_width = MeasureText(pause_text, FONT_SIZE);
@@ -137,6 +144,11 @@ void ResolveBallAbsorption(Ball *a, Ball *b)
 {
     if (sim.ball_count > 1) {
         a->radius += b->radius * 0.2f;
+        // mix colours
+        a->colour.r = (a->colour.r + b->colour.r) / 2;
+        a->colour.g = (a->colour.g + b->colour.g) / 2;
+        a->colour.b = (a->colour.b + b->colour.b) / 2;
+
         *b = sim.balls[sim.ball_count - 1];
         sim.ball_count--;
         sim.absorptions++;
@@ -160,12 +172,18 @@ void UpdateBallPositions()
     if (sim.state == PAUSE) return;
     if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && sim.ball_count < MAX_BALLS - 1) {
         Vector2 vec = GetMousePosition();
+        Color color_palette[] = {
+            RED, BLUE, GREEN, YELLOW, PURPLE, ORANGE,
+            SKYBLUE, PINK, LIME, GOLD, MAGENTA, VIOLET
+        };
+        int palette_size = sizeof(color_palette) / sizeof(color_palette[0]);
         Ball new_ball = {
             .x = vec.x,
             .y = vec.y,
             .dx = float_rand(-1, 1),
             .dy = float_rand(-1, 1),
-            .radius = BALL_RADIUS
+            .radius = BALL_RADIUS,
+            .colour = color_palette[rand() % palette_size]
         };
         normalise_ball_speed(&new_ball);
         sim.balls[sim.ball_count++] = new_ball;
@@ -193,15 +211,15 @@ void UpdateBallPositions()
 
 void DrawBalls()
 {
-    Color ball_colors[] = {RED, ORANGE, YELLOW, GREEN, BLUE, PURPLE, VIOLET};
     for (unsigned int i = 0; i < sim.ball_count; ++i) {
-        Color color = ball_colors[i % 7];
-        DrawCircle(sim.balls[i].x, sim.balls[i].y, sim.balls[i].radius, color);
+        DrawCircle(sim.balls[i].x, sim.balls[i].y, sim.balls[i].radius, sim.balls[i].colour);
     }
 }
 
 void DrawHUD()
 {
+    if (!sim.display_hud) return;
+
     const int BUFFER_SIZE = 100;
     char buffer[BUFFER_SIZE];
     const int MARGIN = WINDOW_WIDTH / 30;
@@ -216,17 +234,12 @@ void DrawHUD()
     snprintf(buffer, BUFFER_SIZE, "ball count: %u", sim.ball_count);
     DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 2, FONT_SIZE, WHITE);
 
-   // Add mode indicator
-    const char* mode_text = (sim.mode == MODE_COLLISION) ? "COLLISION" : "ABSORPTION";
-    snprintf(buffer, BUFFER_SIZE, "mode: %s", mode_text);
-    DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 3, FONT_SIZE, WHITE);
-
     if (sim.mode == MODE_COLLISION) {
         snprintf(buffer, BUFFER_SIZE, "collisions: %u", sim.collisions);
-        DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 4, FONT_SIZE, WHITE);
+        DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 3, FONT_SIZE, WHITE);
     } else if (sim.mode == MODE_ABSORPTION) {
         snprintf(buffer, BUFFER_SIZE, "absorptions: %u", sim.absorptions);
-        DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 4, FONT_SIZE, WHITE);
+        DrawText(buffer, MARGIN, MARGIN + LINE_HEIGHT * 3, FONT_SIZE, WHITE);
     }
 }
 

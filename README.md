@@ -8,12 +8,13 @@ A simple ball physics simulation built with Raylib in C. Features interactive re
 - **SPACE**: Pause/Resume simulation
 - **UP/DOWN Arrows**: Increase/Decrease ball speed
 - **M**: Toggle between Collision and Absorption modes
+- **D**: Toggle display HUD
 - **ESC** or **Close Window**: Exit application
 
 ## Modes
 
 - **Collision**: Balls bounce off each other with realistic physics
-- **Absorption**: Colliding balls merge (one ball is removed)
+- **Absorption**: Colliding balls merge and mix colours
 
 ## Prerequisites
 
