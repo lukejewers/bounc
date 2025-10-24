@@ -29,4 +29,4 @@ make run
 
 ## Demo
 
-![bounc](./bounc.gif)
+![bounc](./bounc.png)
